@@ -17,8 +17,13 @@
 // boris@volkovyski.ru
 // Добавлено управление с помощью 5-ти кнопок на основе GyverButton
 // Добавлено отображение режима работы на индикаторе
-// Инфракрасный пульт не помещается в память и будет выпилен
-// Приведены в порядок комментарии по коду
+// Инфракрасный пульт не помещается в память и выпилен
+// Аналоговые кнопки тоже выпилены (обычных достаточно)
+// Приводятся в порядок комментарии по коду
+
+// Если вы прошили вашу Arduino, все работет, а потом при повторной прошивке IDE ругается, прошейте блинком (blink) и потом уже боевой прошивкой. 
+// Я не уверен, но похоже работа программы не оставляет ресурсов на обратную связь при прошивке. 
+// Буду рад если напишете мне прав я или нет и в чем на самом деле дело.
 
 //  Переделка и дополнение
 //  Декабрь 2018
@@ -37,7 +42,6 @@
 //=============================================================================================================================================================
 //               ПАРАМЕТРЫ
 //=============================================================================================================================================================
-#define KOL_LED 100       // Сколько светодиодов в гирлянде при первом включении
 
 /////////////////////////////////////////////////////////////////////////////////
 ///                               Параметры индикатора
@@ -53,60 +57,59 @@
 /////////////////////////////////////////////////////////////////////////////////
 
 // Настройка действия по кнопке осуществляется в файле command.h
-#define USE_BTN 1   // использовать управление кнопками
+#define USE_BTN 1   // использовать управление кнопками (1 - да, 0 - нет)
 
-// Настройка пинов подключения кнопок
-#define BTN_PIN_1 6   // пин кнопки 1
-#define BTN_PIN_2 7   // пин кнопки 2
-#define BTN_PIN_3 8   // пин кнопки 3
-#define BTN_PIN_4 9   // пин кнопки 4
-#define BTN_PIN_5 10  // пин кнопки 5
-
-/////////////////////////////////////////////////////////////////////////////////
-///                               Параметры инфракрасного пульта
-/////////////////////////////////////////////////////////////////////////////////
-#define IR_ON         0           // Если равен 1  используется пульт
-                                  // если не равен 1 пульт не используется, работает в демо режиме
-
-#define PIN_IR        11          // Номер пина, куда подключен датчик пульта,
-#define IR_MAX_LEDS   100         // Максимальное количество светодиодов при работе с пультом 
-                                  // должно быть больше или равно KOL_LED
-                                  // От размера этого числа зависит количество используемой памяти
-
-//Тип пульта на который будет реагировать устройство, ставим 1 у того который используется
-//это уменьшит используемую память
-//Чтобы узнать имя пульта запустите в примерах IRremote / IRrecvDump
-#define IR_RC5        0           // пульт RC5,
-#define IR_RC6        0           // пульт RC6,          
-#define IR_NEC        1           // пульт NEC,          
-#define IR_SONY       0           // пульт SONY,          
-#define IR_PANASONIC  0           // пульт PANASONIC,          
-#define IR_JVC        0           // пульт JVC,
-#define IR_SAMSUNG    0           // пульт SAMSUNG,
-#define IR_WHYNTER    0           // пульт WHYNTER,
-#define IR_AIWA       0           // пульт AIWA_RC_T501,
-#define IR_LG         0           // пульт LG,
-#define IR_SANYO      0           // пульт SANYO,
-#define IR_MITSUBISHI 0           // пульт MITSUBISHI,
-#define IR_DENON      0           // пульт DENON                     
-
-#define IR_REPEAT     0           //Включить повтор, при долгом нажатии на кнопку пульта будет повтор клавиши
+#if USE_BTN == 1
+  // Настройка пинов подключения кнопок
+  #define BTN_PIN_1 6   // пин кнопки 1
+  #define BTN_PIN_2 7   // пин кнопки 2
+  #define BTN_PIN_3 8   // пин кнопки 3
+  #define BTN_PIN_4 9   // пин кнопки 4
+  #define BTN_PIN_5 10  // пин кнопки 5
+#endif
 
 /////////////////////////////////////////////////////////////////////////////////
 ///                               Параметры гирлянды
 /////////////////////////////////////////////////////////////////////////////////
-#define COLOR_ORDER   GRB        // Очередность цвета светодиодов  RGB или GRB
+#define KOL_LED 100       // Сколько светодиодов в гирлянде при первом включении
 
 #define CHIPSET       WS2811     // Тип микросхемы светодиодов в гирлянде (установка WS2812B для ленты WS2811 тоже работает)
 #define LED_DT        2          // Номер пина куда подключена гирлянда
 //#define LED_CK      11         // Номер пина для подключения тактов, применяется для светодиодов WS2801 или APA102
                                  // ЕСЛИ НЕ ИСПОЛЬЗУЕТСЯ ЗАКОМЕНТИРОВАТЬ
 
+#define COLOR_ORDER   GRB        // Очередность цвета светодиодов  RGB или GRB
+
 #define POWER_V       5          // напряжение блока питания в Вольтах
 #define POWER_I       5000       // Ток блока питания в милиАмперах
 
+
 /////////////////////////////////////////////////////////////////////////////////
-///                               Параметры программы
+///                               Параметры вывода отладочного журнала
+/////////////////////////////////////////////////////////////////////////////////
+#define LOG_ON        1           // Включить лог  1 - включить лог
+
+
+/////////////////////////////////////////////////////////////////////////////////
+///                               Параметры EEPROM
+/////////////////////////////////////////////////////////////////////////////////
+#define USE_EEPROM   0                                         // Использовать EEPROM для хранения настроек (1 - да, 0 - нет)
+
+#if USE_EEPROM == 1
+  // Подключение библиотеки для работы с EEPROM
+  #include "EEPROM.h"     
+
+  // EEPROM location definitions.
+  #define STARTMODE 0                                           // EEPROM location for the starting mode.
+  #define STRANDLEN 1                                           // EEPROM location for the actual Length of the strand, which is < MAX_LEDS
+  #define STRANDEL  3                                           // EEPROM location for the mesh delay value.
+  #define ISINIT    4                                           // EEPROM location used to verify that this Arduino has been initialized
+
+#endif
+
+
+/////////////////////////////////////////////////////////////////////////////////
+///                               Параметры эффектов
 /////////////////////////////////////////////////////////////////////////////////
 #define BLACKSTART    0           // Первый запуск делать с черного экрана 0- начинать с эффекта, 1- начинать с черного экрана
 
@@ -147,44 +150,10 @@
 
 #define PALETTE_TIME  30          // Через сколько секунд менять палитру если 0 - не меняем
 
-#define LOG_ON        1           // Включить лог  1 - включить лог
-
-
-/////////////////////////////////////////////////////////////////////////////////
-///                               Параметры аналоговых кнопок
-/////////////////////////////////////////////////////////////////////////////////
-//Настройка действия кнопке осуществляется в файле commands.h
-
-#define KEY_ON        0           // Если равен 1  используются кнопки подключенные к аналоговому входу
-#define PIN_KEY       A3          // Номер пина, куда подключены кнопки
-
-//Значения смотреть в протоколе после строки Analog Key
-#define KEY_0         10          // Значение соответствующее нажатой 0 кнопке
-// если значение меньше KEY_DELTA, то кнопка не используется
-#define KEY_1         70          // Значение соответствующее нажатой 1 кнопке
-// если значение меньше KEY_DELTA, то кнопка не используется
-#define KEY_2         140         // Значение соответствующее нажатой 2 кнопке
-// если значение меньше KEY_DELTA, то кнопка не используется
-#define KEY_3         280         // Значение соответствующее нажатой 3 кнопке
-// если значение меньше KEY_DELTA, то кнопка не используется
-#define KEY_4         360         // Значение соответствующее нажатой 4 кнопке
-// если значение меньше KEY_DELTA, то кнопка не используется
-#define KEY_5         520         // Значение соответствующее нажатой 5 кнопке
-// если значение меньше KEY_DELTA, то кнопка не используется
-#define KEY_6         700         // Значение соответствующее нажатой 6 кнопке
-// если значение меньше KEY_DELTA, то кнопка не используется
-#define KEY_7         900         // Значение соответствующее нажатой 7 кнопке
-// если значение меньше KEY_DELTA, то кнопка не используется
-#define KEY_DELTA     5           // погрешность значения кнопки, то есть от -KEY_DELTA до +KEY_DELTA
-
-
 
 //=============================================================================================================================================================
 //               НАСТРОЙКИ ПРОГРАММЫ
 //=============================================================================================================================================================
-#if (IR_ON == 1) && (KOL_LED > IR_MAX_LEDS)
-  #error "Значение KOL_LED должно быть меньше или равно IR_MAX_LEDS"
-#endif
 
 #define qsubd(x, b)  ((x>b)?wavebright:0)                     // A digital unsigned subtraction macro. if result <0, then => 0. Otherwise, take on fixed value.
 #define qsuba(x, b)  ((x>b)?x-b:0)                            // Unsigned subtraction macro. if result <0, then => 0.
@@ -199,28 +168,8 @@
   #error "Requires FastLED 3.1 or later; check github for latest code."
 #endif
 
-#if   IR_ON == 1
-  #include "EEPROM.h"                                           // This is included with base install
-  #include "IRremote.h"                                         
-#endif
 
-#include "commands.h"                                         // The commands.
-
-#if KEY_ON == 1                                                 //Для аналоговых кнопок
-  int key_input = 0;                                            //Последнее нажатие кнопки
-  int key_input_new;                                            //только что пришедшее нажатие кнопки
-  bool key_bounce = 0;                                          //для антидребезга
-  uint32_t key_time;                                            //время последнего нажатия
-
-#endif
-
-#if IR_ON == 1
-  int RECV_PIN = PIN_IR;
-  IRrecv irrecv(RECV_PIN);
-  decode_results results;
-#endif
-
-#if ( IR_ON == 1 || KEY_ON == 1 || USE_BTN == 1 )
+#if ( USE_BTN == 1 )
   uint8_t  IR_New_Mode = 0;                                      //Выбор эффекта
   uint32_t IR_Time_Mode = 0;                                     //время последнего нажатия
 #endif
@@ -229,11 +178,7 @@
 #define SERIAL_BAUDRATE 115200                                 // 57600 or 115200
 
 // Fixed definitions cannot change on the fly.
-#if IR_ON == 1
-  #define MAX_LEDS IR_MAX_LEDS
-#else
-  #define MAX_LEDS  KOL_LED
-#endif
+#define MAX_LEDS  KOL_LED
 
 // Initialize changeable global variables.
 #if MAX_LEDS < 255
@@ -261,11 +206,6 @@ uint32_t demo_time = 0;                                         // время д
 
 TBlendType currentBlending = LINEARBLEND;                     // NOBLEND or LINEARBLEND
 
-// EEPROM location definitions.
-#define STARTMODE 0                                           // EEPROM location for the starting mode.
-#define STRANDLEN 1                                           // EEPROM location for the actual Length of the strand, which is < MAX_LEDS
-#define STRANDEL  3                                           // EEPROM location for the mesh delay value.
-#define ISINIT    4                                           // EEPROM location used to verify that this Arduino has been initialized
 
 #define INITVAL   0x55                                        // If this is the value in ISINIT, then the Arduino has been initialized. Startmode should be 0 and strandlength should be 
 #define INITMODE  0                                           // Startmode is 0, which is black.
@@ -291,7 +231,9 @@ uint8_t demorun = DEMO_MODE;                                    // 0 = regular m
 uint8_t Protocol = 0;                                         // Temporary variables to save latest IR input
 uint32_t Command = 0;
 
-// Общие переменные ----------------------------------------------------------------------
+//==============================================================================================================
+//       Общие переменные
+//==============================================================================================================
 uint8_t allfreq = 32;                                         // Меняет частоту. Переменная для эффектов one_sin_pal и two_sin.
 uint8_t bgclr = 0;                                            // Общий цвет фона. Переменная для эффектов matrix_pal и one_sin_pal.
 uint8_t bgbri = 0;                                            // Общая фоновая яркость. Переменная для эффектов matrix_pal и one_sin_pal.
@@ -335,8 +277,9 @@ void meshwait();
 void getirl();
 void demo_check();
 
-// Display functions -----------------------------------------------------------------------
-
+//==============================================================================================================
+//       Display functions
+//==============================================================================================================
 // Support functions
 #include "addings.h"
 
@@ -358,35 +301,42 @@ void demo_check();
 #include "fire.h"
 #include "candles.h"
 #include "colorwave.h"
-#include "getirl.h"
+
 
 //==============================================================================================================
-//       Buttons initialization
+//       Подключение определений команд управления гирляндой
+//==============================================================================================================
+#include "commands.h"            
+#include "getirl.h"                             
+
+
+//==============================================================================================================
+//       Инициализация кнопок
 //==============================================================================================================
 #if USE_BTN == 1
-#include "GyverButton.h"
-GButton btn1(BTN_PIN_1);
-GButton btn2(BTN_PIN_2);
-GButton btn3(BTN_PIN_3);
-GButton btn4(BTN_PIN_4);
-GButton btn5(BTN_PIN_5);
+  #include "GyverButton.h"
+  GButton btn1(BTN_PIN_1);
+  GButton btn2(BTN_PIN_2);
+  GButton btn3(BTN_PIN_3);
+  GButton btn4(BTN_PIN_4);
+  GButton btn5(BTN_PIN_5);
 #endif
 
 
 //==============================================================================================================
-//       Indicator initialization
+//       Инициализация индикатора
 //==============================================================================================================
 #if USE_INDICATOR == 1
-#include "2indicator.h"
+  #include "2indicator.h"
 #endif
 
 
-/*--------------------------------------------------------------------------------------------------------------
-  ------------------------------------------------- Start of code ----------------------------------------------
-  --------------------------------------------------------------------------------------------------------------*/
 
+//=============================================================================================================================================================
+//               ОСНОВНОЙ КОД
+//=============================================================================================================================================================
 /**
- * Initial setup
+ * Инициализация программы
  * 
  * @return void
  */
@@ -396,20 +346,12 @@ void setup() {
   show_welcome_animation();
 #endif
 
-#if KEY_ON == 1
-  pinMode(PIN_KEY, INPUT);                                                        //Для аналоговых кнопок
-#endif
-
 #if LOG_ON == 1
   Serial.begin(SERIAL_BAUDRATE);                                                  // Setup serial baud rate
   Serial.println(F(" ")); Serial.println(F("---SETTING UP---"));
 #endif
 
   delay(1000);                                                                    // Slow startup so we can re-upload in the case of errors.
-
-#if IR_ON == 1
-  irrecv.enableIRIn();                                                          // Start the receiver
-#endif
 
   LEDS.setBrightness(max_bright);                                                 // Set the generic maximum brightness value.
 
@@ -424,39 +366,9 @@ set_max_power_in_volts_and_milliamps(POWER_V, POWER_I);                         
 random16_set_seed(4832);                                                        // Awesome randomizer of awesomeness
 random16_add_entropy(analogRead(2));
 
-#if IR_ON == 1
-ledMode = EEPROM.read(STARTMODE);
-// Location 0 is the starting mode.
-NUM_LEDS = EEPROM.read(STRANDLEN); 
-#if MAX_LEDS < 255
-if (EEPROM.read(STRANDLEN+1))
-NUM_LEDS = MAX_LEDS; // Need to ensure NUM_LEDS < MAX_LEDS elsewhere.
-#else
-  NUM_LEDS = (uint16_t)EEPROM.read(STRANDLEN + 1) << 8 +                               // Need to ensure NUM_LEDS < MAX_LEDS elsewhere.
-             EEPROM.read(STRANDLEN);
-#endif
-  meshdelay = EEPROM.read(STRANDEL);                                              // This is our notamesh delay for cool delays across strands.
-  // Check to see if Arduino has been initialized, and if not, do so.
-  if (  (EEPROM.read(ISINIT) != INITVAL) || (NUM_LEDS > MAX_LEDS ) || ((ledMode > maxMode) && (ledMode != 100) ) )
-  {
-    EEPROM.write(STARTMODE, INITMODE);                                            // Initialize the starting mode to 0.
-#if MAX_LEDS < 255
-    EEPROM.write(STRANDLEN, INITLEN);                                           // Initialize the starting length to 20 LED's.
-#else
-    EEPROM.write(STRANDLEN,   (uint16_t)(INITLEN) & 0x00ff);                      // Initialize the starting length to 20 LED's.
-    EEPROM.write(STRANDLEN + 1, (uint16_t)(INITLEN) >> 8);                        // Initialize the starting length to 20 LED's.
-#endif
-    EEPROM.write(ISINIT, INITVAL);                                                // Initialize the starting value (so we know it's initialized) to INITVAL.
-    EEPROM.write(STRANDEL, INITDEL);                                              // Initialize the notamesh delay to 0.
-    ledMode = INITMODE;
-    NUM_LEDS = INITLEN;
-    meshdelay = INITDEL;
-  }
-#else
-  ledMode = INITMODE;
-  NUM_LEDS = KOL_LED;
-  meshdelay = INITDEL;
-#endif
+ledMode = INITMODE;
+NUM_LEDS = KOL_LED;
+meshdelay = INITDEL;
 
 #if LOG_ON == 1
   Serial.print(F("Initial delay: ")); Serial.print(meshdelay * 100); Serial.println(F("ms delay."));
@@ -492,7 +404,7 @@ NUM_LEDS = MAX_LEDS; // Need to ensure NUM_LEDS < MAX_LEDS elsewhere.
 bool onFlag = true;
 
 /**
- * Main loop
+ * Главный цикл программы
  * 
  * @return void
  */
@@ -556,7 +468,7 @@ void loop() {
   }
 #endif
 
-#if ( IR_ON == 1 || KEY_ON == 1 || USE_BTN == 1 )
+#if ( USE_BTN == 1 )
   getirl();                                                                   // Обработка команд с пульта и аналоговых кнопок
 #endif
 
@@ -634,108 +546,12 @@ void loop() {
     if (background) addbackground();                                            // Включить заполнение черного цвета фоном
   }
 
-#if KEY_ON == 1                                                             //Для аналоговых кнопок
-  key_input_new = analogRead(PIN_KEY);                                      //прочитаем аналоговые кнопки
-  if  ( ( ( (key_input - KEY_DELTA) > key_input_new) ||                     //Пришло новое значение отличное от прошлого
-          ( (key_input + KEY_DELTA) < key_input_new) ) &&
-        !key_bounce ) {                                                     // и еще ничего не приходило
-    key_bounce = 1;                                                         //Начинаем обрабатывать
-    key_time = millis();                                                    //Запомним время
-  }
-  else if (  key_bounce &&                                                    //Обрабатываем нажатия
-             ((millis() - key_time) >= 50 )  ) {                               //Закончилось время дребезга
-    key_bounce = 0;                                                       //Больше не обрабатываем
-    key_input = key_input_new;
-#if LOG_ON == 1
-    Serial.print(F("Analog Key: ")); Serial.println(key_input);
-#endif
-
-#if KEY_0 >= KEY_DELTA
-    if  ( ( (KEY_0 - KEY_DELTA) < key_input) &&
-          ( (KEY_0 + KEY_DELTA) > key_input) )  {                       //Нашли нажатую кнопку KEY_0
-      Protocol = 1;
-      Command = KEY_0;
-    }
-#endif
-#if KEY_1 >= KEY_DELTA
-    if  ( ( (KEY_1 - KEY_DELTA) < key_input) &&
-          ( (KEY_1 + KEY_DELTA) > key_input) )  {                       //Нашли нажатую кнопку KEY_1
-      Protocol = 1;
-      Command = KEY_1;
-    }
-#endif
-#if KEY_2 >= KEY_DELTA
-    if  ( ( (KEY_2 - KEY_DELTA) < key_input) &&
-          ( (KEY_2 + KEY_DELTA) > key_input) )  {                       //Нашли нажатую кнопку KEY_2
-      Protocol = 1;
-      Command = KEY_2;
-    }
-#endif
-#if KEY_3 >= KEY_DELTA
-    if  ( ( (KEY_3 - KEY_DELTA) < key_input) &&
-          ( (KEY_3 + KEY_DELTA) > key_input) )  {                       //Нашли нажатую кнопку KEY_3
-      Protocol = 1;
-      Command = KEY_3;
-    }
-#endif
-#if KEY_4 >= KEY_DELTA
-    if  ( ( (KEY_4 - KEY_DELTA) < key_input) &&
-          ( (KEY_4 + KEY_DELTA) > key_input) )  {                       //Нашли нажатую кнопку KEY_4
-      Protocol = 1;
-      Command = KEY_4;
-    }
-#endif
-#if KEY_5 >= KEY_DELTA
-    if  ( ( (KEY_5 - KEY_DELTA) < key_input) &&
-          ( (KEY_5 + KEY_DELTA) > key_input) )  {                       //Нашли нажатую кнопку KEY_5
-      Protocol = 1;
-      Command = KEY_5;
-    }
-#endif
-#if KEY_6 >= KEY_DELTA
-    if  ( ( (KEY_6 - KEY_DELTA) < key_input) &&
-          ( (KEY_6 + KEY_DELTA) > key_input) )  {                       //Нашли нажатую кнопку KEY_6
-      Protocol = 1;
-      Command = KEY_6;
-    }
-#endif
-#if KEY_7 >= KEY_DELTA
-    if  ( ( (KEY_7 - KEY_DELTA) < key_input) &&
-          ( (KEY_7 + KEY_DELTA) > key_input) )  {                       //Нашли нажатую кнопку KEY_7
-      Protocol = 1;
-      Command = KEY_7;
-    }
-#endif
-  }
-#endif
-
-#if ( IR_ON == 1 || KEY_ON == 1 || USE_BTN == 1 )
+#if ( USE_BTN == 1 )
   if ( (IR_Time_Mode > 0) &&                                                //Идет отчет времени
        ((millis() - IR_Time_Mode) >= 2000 )  ) {                            //и прошло больше 2 секунд
     IR_Time_Mode = 0;
     if (IR_New_Mode <= maxMode) SetMode(IR_New_Mode);
     IR_New_Mode = 0;
-  }
-#endif
-
-#if IR_ON == 1
-  while (!irrecv.isIdle());                                                   // if not idle, wait till complete
-
-  if (irrecv.decode(&results)) {
-    /* respond to button */
-
-    if (!Protocol) {
-      Protocol = 1;                                        // update the values to the newest valid input
-
-#if IR_REPEAT == 1
-      if ( results.value != 0xffffffff)                    //Если не повтор то вставить новую команду
-        Command = results.value;
-      else Protocol = 2;
-#else
-      Command = results.value;
-#endif
-    }
-    irrecv.resume(); // Set up IR to receive next value.
   }
 #endif
 
@@ -747,27 +563,35 @@ void loop() {
 } // loop()
 
 
-//-------------------OTHER ROUTINES----------------------------------------------------------
-void strobe_mode(uint8_t mode, bool mc) {                  // mc stands for 'Mode Change', where mc = 0 is strobe the routine, while mc = 1 is change the routine
+/**
+ * strobe_mode 
+ * Выполнение шага анимации гирлянды
+ * 
+ * @param mode Режим анимации.
+ * @param mc Флаг смены режима анимации. 0 - выполняем текущую анимацию, 1 - меняем режим
+ * 
+ * @return void
+ */
+void strobe_mode(uint8_t mode, bool mc) {
 
   if (mc) {
     fill_solid(leds, NUM_LEDS, CRGB(0, 0, 0));                // Clean up the array for the first time through. Don't show display though, so you may have a smooth transition.
-#if LOG_ON == 1
-    Serial.print(F("Mode: ")); Serial.println(mode);
-    Serial.print(F("Millis: ")); Serial.println(millis());
-#endif
 
-#if USE_INDICATOR == 1
-    show_status(mode, glitter); 
-#endif
+    #if LOG_ON == 1
+        Serial.print(F("Mode: ")); Serial.println(mode);
+        Serial.print(F("Millis: ")); Serial.println(millis());
+    #endif
 
-#if PALETTE_TIME>0
-    if (palchg == 0) palchg = 3;
-#else
-    if (palchg == 0) palchg = 1;
-#endif
+    #if USE_INDICATOR == 1
+        show_status(mode, glitter); 
+    #endif
+
+    #if PALETTE_TIME>0
+        if (palchg == 0) palchg = 3;
+    #else
+        if (palchg == 0) palchg = 1;
+    #endif
   }
-
 
   switch (mode) {                                          // First time through a new mode, so let's initialize the variables for a given display.
 

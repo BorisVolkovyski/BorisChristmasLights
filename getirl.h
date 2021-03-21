@@ -1,6 +1,6 @@
 
-//----------------- IR Receiver and Button Command Processing ---------------------------------------------
-#if ( IR_ON == 1 || KEY_ON == 1 || USE_BTN == 1)
+//----------------- Button Command Processing ---------------------------------------------
+#if ( USE_BTN == 1)
 
 void SetMode (uint8_t Mode) { 
   demorun = 0;
@@ -105,7 +105,7 @@ void getirl() {
       case IR_Key_Length_Garland_plus : ///////////////////////////////////////////////////////////////////////////  Увеличить количество светодиодов в гирлянде
         demorun = 0; ledMode = 200;
         if (NUM_LEDS < (MAX_LEDS - 1)) NUM_LEDS++;                        //Новое значение
-#if IR_ON == 1
+#if USE_EEPROM == 1
 #if MAX_LEDS < 255
         EEPROM.write(STRANDLEN, NUM_LEDS);                              //Сохранить в память
 #else
@@ -123,7 +123,7 @@ void getirl() {
       case IR_Key_Length_Garland_minus : ///////////////////////////////////////////////////////////////////////////  Уменьшить количество светодиодов в гирлянде
         demorun = 0; ledMode = 200;
         if (NUM_LEDS > 0) NUM_LEDS--;                                     //Новое значение
-#if IR_ON == 1
+#if USE_EEPROM == 1
 #if MAX_LEDS < 255
         EEPROM.write(STRANDLEN, NUM_LEDS);                              //Сохранить в память
 #else
@@ -693,7 +693,7 @@ void getirl() {
 #if IR_Key_Save_Mode
       case IR_Key_Save_Mode :              ///////////////////////////////////////////////////////////////////////////  Сохранить эффект как запускающийся первым
         if (Protocol == 1) {          //отключить повтор
-#if IR_ON == 1
+#if USE_EEPROM == 1
           EEPROM.write(STARTMODE, ledMode);
 #endif
 #if LOG_ON == 1
@@ -707,7 +707,7 @@ void getirl() {
       case IR_Key_Delay_minus :            ///////////////////////////////////////////////////////////////////////////  Уменьшить задержку на 100ms
         demorun = 0; ledMode = 201;
         if (meshdelay > 0) meshdelay--;                                   //Новое значение
-#if IR_ON == 1
+#if USE_EEPROM == 1
         EEPROM.write(STRANDEL, meshdelay);
 #endif
 #if LOG_ON == 1
@@ -720,7 +720,7 @@ void getirl() {
       case IR_Key_Delay_plus :            ///////////////////////////////////////////////////////////////////////////  Увеличить задержку на 100ms
         demorun = 0; ledMode = 201;
         if (meshdelay < 100) meshdelay++;                                 //Новое значение
-#if IR_ON == 1
+#if USE_EEPROM == 1
         EEPROM.write(STRANDEL, meshdelay);
 #endif
 #if LOG_ON == 1
